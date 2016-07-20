@@ -35,7 +35,7 @@ public class N2TParserTest
     public static void setUpClass()
     {
         try {
-            testParser = new N2TParser("testinput/Max.asm");
+            testParser = new N2TParser("Max.asm");
             testParser.mark();
         } catch (FileNotFoundException fnf) {
             System.out.println("file error");
