@@ -1,3 +1,5 @@
 # Nand2Tetris
 
-Repo for the VMTranslator from the book, The Elements of Computing Systems. Still lots of work to do to improve readability, documentation, and overall performance.
+NetBeans project repo for the Hack VM Implementation from the book, The Elements of Computing Systems. Lots of revisions still necessary for the Assembler and Translator
+to improve performance and readability. Documentation is also very incomplete. Also missing is the Compiler to translate
+the Jack programming language into VM code.
