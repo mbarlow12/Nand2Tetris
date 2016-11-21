@@ -21,7 +21,9 @@ public class Parser implements AutoCloseable
 {
     private final BufferedReader reader;
     private String currentCommand;
-    private static final List<String> ARITHMETIC_COMMANDS = new ArrayList(Arrays.asList("add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not"));
+    private static final List<String> ARITHMETIC_COMMANDS = new ArrayList(
+            Arrays.asList("add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not")
+    );
 
     public Parser(String filename) throws FileNotFoundException
     {
@@ -43,37 +45,28 @@ public class Parser implements AutoCloseable
         } while (currentCommand.startsWith("//") || currentCommand.isEmpty());
     }
     
-    public String commandType()
+    public String commandType() {
+        String fmt = "c_%s";
+        
+        return String.format(fmt, getCommand());
+    }
+    
+    private String getCommand()
     {
-        String comType;
         String[] cArray = currentCommand.split("[\\s]");
+        List<String> comTypes = new ArrayList<>(
+                Arrays.asList("function", "label", "push", "pop", "goto", "call", "return")
+        );
         
-        if (ARITHMETIC_COMMANDS.contains(cArray[0])) {
-            comType = "arithmetic";
-        } else if (cArray[0].contains("function")) {
-            comType = "function";
-        } else if (cArray[0].contains("label")) {
-            comType = "label";
-        } else if (cArray[0].contains("push")) {
-            comType = "push";
-        } else if (cArray[0].contains("pop")) {
-            comType = "pop";
-        } else if (cArray[0].contains("goto")) {
-            comType = "goto";
-        } else if (cArray[0].contains("if-goto")) {
-            comType = "if";
-        } else if (cArray[0].contains("call")) {
-            comType = "call";
-        } else if (cArray[0].equals("return")) {
-            comType = "return";
-        } else {
-            comType = "";
-        }
+        if (ARITHMETIC_COMMANDS.contains(cArray[0]))
+            return "arithmetic";
+        else if (cArray[0].equals("if-goto"))
+            return "if";
         
-        if (comType.equals(""))
-            return "";
-        else
-            return "C_" + comType.toUpperCase();
+        if (comTypes.contains(cArray[0]))
+            return cArray[0].trim();
+        
+        return "";
     }
     
     public String arg1()
