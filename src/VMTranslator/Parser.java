@@ -6,6 +6,7 @@
 package VMTranslator;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class Parser implements AutoCloseable
             Arrays.asList("add", "sub", "neg", "eq", "gt", "lt", "and", "or", "not")
     );
 
-    public Parser(String filename) throws FileNotFoundException
+    public Parser(File filename) throws FileNotFoundException
     {
         FileReader fr = new FileReader(filename);
         reader = new BufferedReader(fr);

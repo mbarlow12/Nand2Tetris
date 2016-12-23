@@ -25,6 +25,7 @@ public class CodeWriter implements AutoCloseable
     private final BufferedWriter writer;
     private int compCount = 0;
     private boolean containsComps = false;
+    private String functionName = null;
 
     public CodeWriter(String fileOut) throws IOException
     {
@@ -36,6 +37,40 @@ public class CodeWriter implements AutoCloseable
     {
         String[] splitName = fileName.split("\\.");
         this.fileName = splitName[0];
+    }
+    
+    public void writeInit() throws IOException
+    {
+        writeLine("@256");
+        writeLine("D=A");
+        // write code to call 'Sys.init'
+    }
+    
+    public void writeLabel(String label) throws IOException
+    {
+        writeLine(String.format("(%s)", getLabelName(label)));
+    }
+    
+    public void writeGoTo(String label) throws IOException
+    {
+        writeLine(String.format("@%s", getLabelName(label)));
+        writeLine("0;JMP");
+    }
+    
+    public void writeIf(String label) throws IOException
+    {
+        // pop top stack item to D register
+        writeLine("@SP");
+        writeLine("AM=M-1");
+        writeLine("D=M");
+        // if D != 0 (akd D not false) jump to @{LABEL}
+        writeLine(String.format("@%s", getLabelName(label)));
+        writeLine("D;JNE");
+    }
+    
+    public void writeCall(String functionName, int args) throws IOException
+    {
+        
     }
     
     public void writeArithmetic(String command) throws IOException
@@ -91,7 +126,7 @@ public class CodeWriter implements AutoCloseable
         // A=A-1
         writeLine("A=A-1");
         // M=M+D
-        writeLine("M=M+D");
+        writeLine("M=D+M");
     }
     
     private void writeSub() throws IOException
@@ -139,22 +174,13 @@ public class CodeWriter implements AutoCloseable
         // M=M-D
         writeLine("D=M-D");
         // M=-1 - always set value to true
-        writeLine("M=-1");
+        writeLine("M=0");
         // @EQ_1 || @LT_4 || @GT_2 ...
-        writeLine("@" + label);
+        writeLine("@COMP_TRUE");
         // D;JEQ
         writeLine("D;J" + command.toUpperCase());
         // @SP
-        writeLine("@SP");
-        // A=M-1
-        writeLine("A=M-1");
-        // M=0
-        writeLine("M=0");
-        // (EQ_1) || (LT_3) ...
-        writeLine("(" + label + ")");
-        
-        writeLine("@R13");
-        writeLine("A=M");
+        writeLine("@COMP_END");
         writeLine("0;JMP");
     }
     
@@ -171,6 +197,19 @@ public class CodeWriter implements AutoCloseable
         for (String comp : C_COMS)
             writeComp(comp);
         
+        writeLine("(COMP_TRUE)");
+        writeLine("@SP");
+        writeLine("A=M-1");
+        writeLine("M=-1");
+        writeLine("(COMP_END)");
+        writeLine("@R13");
+        writeLine("A=M");
+        writeLine("0;JMP");
+        writeEndOfProgram();
+    }
+    
+    public void writeEndOfProgram() throws IOException
+    {
         writeLine("(END_OF_FILE)");
         writeLine("@END_OF_FILE");
         writeLine("0;JMP");
@@ -203,8 +242,7 @@ public class CodeWriter implements AutoCloseable
             setDFromSegment(segment, index);
             writePushDOnStack();
         } else if (command.equals("pop")) {
-            writePopOffStackToD();
-            pushDToSegment(segment, index);
+            pushToSegment(segment, index);
         } else {
             throw new IllegalArgumentException();
         }
@@ -237,34 +275,24 @@ public class CodeWriter implements AutoCloseable
         writeLine("M=D");
     }
     
-    private void writePopOffStackToD() throws IOException
+    private void pushToSegment(String segment, int index) throws IOException
     {
+        // set A to point to Memory[segment + index]
+        writeSegmentIndex(segment, index);
+        // set D to address
+        writeLine("D=A");
+        // save D value (address for segment[index]) to @R13
+        writeLine("@R13");
+        writeLine("M=D");
         // @SP
         writeLine("@SP");
         // AM=M-1 - A and Memory[0]/SP both point to 
         writeLine("AM=M-1");
         // D=M  D = value of topmost stack register
         writeLine("D=M");
-    }
-    
-    private void pushDToSegment(String segment, int index) throws IOException
-    {
-        // save D value to @R13
-        writeLine("@R13");
-        writeLine("M=D");
         
-        // set A to point to Memory[segment + index]
-        writeSegmentIndex(segment, index);
-        // set D to address
-        writeLine("D=A");
-        // store address in R14
-        writeLine("@R14");
-        writeLine("M=D");
-        // set D to original value
         writeLine("@R13");
-        writeLine("D=M");
-        // set A to address in R14
-        writeLine("@R14");
+        // set A to value stored in R13
         writeLine("A=M");
         // store D value in memory[address]
         writeLine("M=D");
@@ -309,6 +337,12 @@ public class CodeWriter implements AutoCloseable
             // @R6 or @R3 ...
             writeLine(aRegister);
         }
+    }
+    
+    private String getLabelName(String label)
+    {
+        String start = functionName == null ? "null$" : functionName + "$";
+        return start + label;
     }
     
     private void writeLine(String output) throws IOException

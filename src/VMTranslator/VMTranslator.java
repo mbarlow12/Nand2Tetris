@@ -23,47 +23,54 @@ public class VMTranslator
     {
         Path currRelPath = Paths.get("");
         String path = currRelPath.toAbsolutePath().toString();
+        
         // take directory or single file
         String fileInName = args[0];
         String fileOutName = fileInName.split("\\.")[0] + ".asm";
         
         File input = new File(path + "/" + fileInName);
         System.out.println(input.getAbsolutePath());
-        System.out.println(input.isDirectory());
         
         if (input.isDirectory()) {
             File[] files = input.listFiles();
-            
             for (File file : files)
-                    if (file.getName().contains(".vm"))
-                    translateFile(file.getAbsolutePath(), fileOutName);
+                    if (file.getName().contains(".vm")) {
+                        translateFile(file, fileOutName);
+                    }
                 
         } else {
-            translateFile(fileInName, fileOutName);
-            
-            if (compLoopsExist)
-                appendCompLoops(fileOutName);
+            translateFile(input, fileOutName);
         }
+        
+        endProgram(fileOutName);
     }
     
-    private static void translateFile(String inputFile, String outputFile)
+    private static void translateFile(File inputFile, String outputFile)
     {
+        
+            System.out.println(inputFile.getName());
         try (
             Parser vmParser = new Parser(inputFile);
             CodeWriter vmWriter = new CodeWriter(outputFile);
         ) {
-            vmWriter.setFileName(inputFile);
+            vmWriter.setFileName(inputFile.getName());
             
             while (vmParser.hasMoreCommands()) {
                 
                 vmParser.advance();
                 
-                switch (vmParser.commandType()) {
+                switch (vmParser.commandType().toUpperCase()) {
                     case "C_ARITHMETIC": vmWriter.writeArithmetic(vmParser.getCurrentCommand());
                         break;
                     case "C_PUSH": vmWriter.writePushPop("push", vmParser.arg1(), vmParser.arg2());
                         break;
                     case "C_POP": vmWriter.writePushPop("pop", vmParser.arg1(), vmParser.arg2());
+                        break;
+                    case "C_LABEL" : vmWriter.writeLabel(vmParser.arg1());
+                        break;
+                    case "C_GOTO" : vmWriter.writeGoTo(vmParser.arg1());
+                        break;
+                    case "C_IF" : vmWriter.writeIf(vmParser.arg1());
                         break;
                 }
             }
@@ -79,14 +86,17 @@ public class VMTranslator
         }
     }
     
-    private static void appendCompLoops(String outputFile)
+    private static void endProgram(String outputFile)
     {
         // append comparison loops only once at end of file
         try (
             CodeWriter vmWriter = new CodeWriter(outputFile);
         ) {
-            
-            vmWriter.writeCompLoops();
+            if (compLoopsExist) {
+                vmWriter.writeCompLoops();
+            } else {
+                vmWriter.writeEndOfProgram();
+            }
             
         } catch (IOException ioe) {
             System.out.println(ioe.getMessage());

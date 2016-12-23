@@ -5,6 +5,7 @@
  */
 package VMTranslator;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -33,7 +34,8 @@ public class ParserTest
     public static void setUpClass()
     {
         try {
-            testParser = new Parser("test.vm");
+            File file = new File("test.vm");
+            testParser = new Parser(file);
             testParser.mark();
             System.out.println("parser successfully set up");
         } catch (FileNotFoundException fnf) {
